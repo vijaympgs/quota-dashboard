@@ -1,0 +1,526 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Google Antigravity — Quota Tracker</title>
+<style>
+:root{
+  --bg:#F3F4F6;--surface:#FFFFFF;--subtle:#F9FAFB;
+  --border:#E5E7EB;--text:#111827;--secondary:#6B7280;--muted:#9CA3AF;
+  --accent:#185FA5;--accent-bg:#EFF6FF;--accent-border:#BFDBFE;
+  --success:#16A34A;--warning:#D97706;--danger:#DC2626;
+  --radius:8px;--radius-lg:10px;
+}
+*{box-sizing:border-box;margin:0;padding:0;}
+body{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;background:var(--bg);color:var(--text);height:100vh;overflow:hidden;}
+.shell{display:flex;height:100vh;overflow:hidden;}
+
+/* SIDEBAR */
+.sidebar{width:220px;min-width:220px;background:var(--surface);border-right:0.5px solid var(--border);display:flex;flex-direction:column;overflow:hidden;}
+.sidebar-header{padding:12px 14px 10px;border-bottom:0.5px solid var(--border);}
+.sidebar-header strong{font-size:13px;font-weight:500;color:var(--text);display:block;}
+.sidebar-header span{font-size:11px;color:var(--muted);}
+.sidebar-header-top{display:flex;align-items:center;justify-content:space-between;gap:8px;}
+.sidebar-refresh-btn{width:26px;height:26px;border:0.5px solid var(--border);border-radius:50%;background:var(--surface);color:var(--secondary);cursor:pointer;font-size:14px;line-height:1;display:flex;align-items:center;justify-content:center;flex-shrink:0;}
+.sidebar-refresh-btn:hover{background:var(--bg);}
+.sidebar-refresh-btn:disabled{opacity:0.5;cursor:not-allowed;}
+.sidebar-meta{font-size:10px;color:var(--muted);padding:6px 12px;border-bottom:0.5px solid var(--border);background:var(--subtle);}
+.account-list{flex:1;overflow:hidden;padding:6px;}
+.add-btn{display:flex;align-items:center;gap:10px;padding:8px 10px;border-radius:var(--radius);cursor:pointer;margin-bottom:4px;border:0.5px dashed #D1D5DB;color:var(--secondary);font-size:12px;}
+.add-btn:hover{background:var(--bg);border-color:var(--accent);}
+.add-icon{width:28px;height:28px;border-radius:50%;border:0.5px dashed #D1D5DB;display:flex;align-items:center;justify-content:center;font-size:16px;color:var(--muted);flex-shrink:0;}
+.sidebar-div{height:0.5px;background:var(--border);margin:0 2px 6px;}
+.acc-item{display:flex;align-items:center;gap:9px;padding:8px 9px;border-radius:var(--radius);cursor:pointer;margin-bottom:2px;border:0.5px solid transparent;position:relative;}
+.acc-item:hover{background:var(--bg);}
+.acc-item.active{background:var(--accent-bg);border-color:var(--accent-border);}
+.acc-item.dim{opacity:0.6;}
+.av{width:30px;height:30px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:500;flex-shrink:0;overflow:hidden;}
+.av img{width:100%;height:100%;object-fit:cover;border-radius:50%;}
+.av-0{background:#E6F1FB;color:#185FA5;}.av-1{background:#EAF3DE;color:#3B6D11;}
+.av-2{background:#FAEEDA;color:#854F0B;}.av-3{background:#FBEAF0;color:#993556;}
+.av-4{background:#E1F5EE;color:#0F6E56;}.av-5{background:#EEEDFE;color:#3C3489;}
+.acc-info{min-width:0;flex:1;}
+.acc-name{font-size:12px;font-weight:500;color:var(--text);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+.acc-item.active .acc-name{color:var(--accent);}
+.acc-sub{font-size:10px;color:var(--muted);margin-top:1px;}
+.active-dot{display:inline-block;width:5px;height:5px;border-radius:50%;background:var(--success);margin-right:3px;vertical-align:middle;}
+.alert-pip{font-size:9px;margin-left:auto;flex-shrink:0;}
+.logout-btn{display:none;position:absolute;right:8px;top:50%;transform:translateY(-50%);font-size:10px;color:var(--muted);background:var(--bg);border:0.5px solid var(--border);border-radius:4px;padding:2px 6px;cursor:pointer;}
+.acc-item:hover .logout-btn{display:block;}
+.sidebar-footer{padding:8px 12px;border-top:0.5px solid var(--border);font-size:10px;color:var(--muted);}
+
+/* MAIN */
+.main{flex:1;overflow:hidden;padding:10px 12px;background:var(--bg);}
+.main-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:8px;padding:2px 2px 4px;}
+.main-title{font-size:18px;font-weight:600;color:#185FA5;letter-spacing:-0.02em;line-height:1.1;}
+/* ALERTS */
+.alerts{margin-bottom:6px;}
+.alert-row{font-size:11px;padding:6px 10px;border-radius:var(--radius);margin-bottom:4px;}
+.alert-row.warn{background:#FFFBEB;color:#854F0B;border:0.5px solid #FDE68A;}
+.alert-row.danger{background:#FEF2F2;color:#991B1B;border:0.5px solid #FECACA;}
+
+/* CATEGORY */
+.cat-section{margin-bottom:7px;border:0.5px solid var(--border);border-radius:var(--radius-lg);overflow:hidden;background:var(--surface);}
+.cat-header{display:flex;align-items:center;justify-content:space-between;padding:7px 10px;cursor:pointer;user-select:none;}
+.cat-header:hover{background:var(--bg);}
+.cat-left{display:flex;align-items:center;gap:8px;}
+.cat-label{font-size:11px;font-weight:500;color:var(--muted);letter-spacing:0.06em;text-transform:uppercase;}
+.cat-count{font-size:10px;background:var(--bg);color:var(--muted);border:0.5px solid var(--border);border-radius:10px;padding:1px 7px;}
+.cat-chev{font-size:10px;color:var(--muted);transition:transform 0.2s;}
+.cat-chev.open{transform:rotate(90deg);}
+.cat-body{padding:0 8px 8px;}
+.cat-body.collapsed{display:none;}
+
+/* FAMILY SUB-SECTIONS */
+.fam-section{margin-top:5px;border:0.5px solid var(--border);border-radius:var(--radius);overflow:hidden;}
+.fam-header{display:flex;align-items:center;justify-content:space-between;padding:5px 9px;cursor:pointer;user-select:none;background:var(--bg);}
+.fam-header:hover{background:var(--border);}
+.fam-label{font-size:10px;font-weight:500;color:var(--secondary);letter-spacing:0.05em;text-transform:uppercase;}
+
+/* CARDS */
+.cards-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(144px,1fr));gap:7px;padding-top:7px;}
+.card{background:var(--subtle);border:0.5px solid var(--border);border-radius:var(--radius);padding:9px;}
+.card.dim{opacity:0.65;}
+.card-top{display:flex;align-items:center;justify-content:space-between;margin-bottom:4px;}
+.card-name{font-size:11px;font-weight:600;color:var(--text);line-height:1.25;}
+.sdot{width:7px;height:7px;border-radius:50%;flex-shrink:0;}
+.sdot-green{background:var(--success);}.sdot-amber{background:var(--warning);}
+.sdot-gray{background:var(--muted);}.sdot-red{background:var(--danger);}
+.card-tool{font-size:9px;color:var(--muted);margin-bottom:5px;}
+.bar-track{height:5px;background:var(--border);border-radius:3px;overflow:hidden;margin-bottom:4px;}
+.bar-fill{height:100%;border-radius:3px;}
+.bf-green{background:var(--success);}.bf-amber{background:var(--warning);}
+.bf-red{background:var(--danger);}.bf-gray{background:var(--muted);}
+.quota-text{font-size:10px;color:var(--secondary);}
+.card-footer{margin-top:5px;display:flex;align-items:center;justify-content:space-between;gap:3px;flex-wrap:wrap;}
+.reset-txt{font-size:9px;color:var(--muted);}
+.reset-warn{font-size:9px;color:var(--warning);font-weight:500;}
+.badge{font-size:9px;padding:2px 5px;border-radius:4px;}
+.b-active{background:#F0FDF4;color:var(--success);border:0.5px solid #BBF7D0;}
+.b-ac{background:var(--bg);color:var(--muted);border:0.5px solid var(--border);}
+.b-exh{background:#FEF2F2;color:var(--danger);border:0.5px solid #FECACA;}
+
+/* OAUTH BANNER */
+.oauth-banner{display:flex;align-items:center;justify-content:space-between;padding:8px 12px;background:var(--accent-bg);border:0.5px solid var(--accent-border);border-radius:var(--radius);margin-bottom:10px;font-size:12px;color:var(--accent);}
+.oauth-banner a{color:var(--accent);font-weight:500;text-decoration:none;}
+.oauth-banner a:hover{text-decoration:underline;}
+
+/* EMPTY / LOADING */
+.empty-state{display:flex;flex-direction:column;align-items:center;justify-content:center;height:55vh;gap:8px;color:var(--muted);}
+.empty-state p{font-size:13px;}
+.empty-state small{font-size:11px;}
+.empty-state a{font-size:12px;color:var(--accent);text-decoration:none;}
+.empty-state a:hover{text-decoration:underline;}
+</style>
+</head>
+<body>
+<div class="shell">
+
+  <!-- SIDEBAR -->
+  <div class="sidebar">
+    <div class="sidebar-header">
+      <div class="sidebar-header-top">
+        <strong>Google Antigravity</strong>
+        <button class="sidebar-refresh-btn" id="refreshBtn" onclick="doRefresh()" title="Refresh" aria-label="Refresh">↻</button>
+      </div>
+      <span>Quota Tracker</span>
+    </div>
+    <div class="sidebar-meta" id="sidebarMeta">Loading…</div>
+    <div class="account-list" id="accountList"></div>
+    <div class="sidebar-footer" id="sidebarFooter">—</div>
+  </div>
+
+  <!-- MAIN -->
+  <div class="main" id="main">
+    <div class="empty-state"><p>Loading…</p></div>
+  </div>
+
+</div>
+
+<script>
+let QUOTA   = { accounts: [] };
+let GACCS   = [];           // Google OAuth accounts from session
+let ACTIVE  = null;
+window._fetchedAt = null;
+
+const AV = ["av-0","av-1","av-2","av-3","av-4","av-5"];
+
+/* ── HELPERS ── */
+function toolOf(d){ return d.tool||d.source||"Unknown"; }
+function isRef(d){ return d.fetch_method==="reference only"||d.placeholder===true; }
+function isUncfg(d){ return d.account==="not configured"||d.account==="manual"; }
+function isInactive(d){ return isRef(d)||isUncfg(d); }
+function barFill(p){ return p>=85?"bf-red":p>=60?"bf-amber":"bf-green"; }
+function dotClass(p,ex){
+  if(ex) return"sdot-red";
+  if(p==null) return"sdot-gray";
+  return p>=85?"sdot-red":p>=60?"sdot-amber":"sdot-green";
+}
+function fmtMs(rt,ms){
+  const m=ms||(rt?Math.max(0,new Date(rt)-Date.now()):0);
+  if(!m) return"";
+  if(m<=0) return"Resetting…";
+  const h=Math.floor(m/3600000),mn=Math.floor((m%3600000)/60000);
+  return h>0?`${h}h ${mn}m`:`${mn}m`;
+}
+function timeSince(iso){
+  if(!iso) return"";
+  const s=Math.floor((Date.now()-new Date(iso))/1000);
+  if(s<60)  return`${s}s ago`;
+  if(s<3600)return`${Math.floor(s/60)}m ago`;
+  return`${Math.floor(s/3600)}h ago`;
+}
+function initials(email){
+  const n=email.split("@")[0].split(/[\._\-]/);
+  return(n[0][0]+(n[1]?n[1][0]:n[0][1]||"")).toUpperCase();
+}
+
+/* ── BUILD ACCOUNTS — Google + Antigravity + Service accounts ── */
+function buildQuotaAccounts(){
+  const accounts=[];
+  
+  // 1. Add Google OAuth accounts
+  GACCS.forEach(g=>{
+    const qrows=QUOTA.accounts.filter(d=>d.email===g.email&&!isInactive(d));
+    accounts.push({
+      email:g.email, account:g.name||g.email,
+      isActive:qrows.some(d=>d.isActive),
+      fromGoogle:true, picture:g.picture, name:g.name,
+      isService:false,
+    });
+  });
+  
+  // 2. Add Antigravity accounts (from CLI, not Google OAuth)
+  const agEmails = [...new Set(QUOTA.accounts
+    .filter(d=>d.tool==="Antigravity"&&!isInactive(d))
+    .map(d=>d.email))];
+  
+  agEmails.forEach(email=>{
+    if(GACCS.some(g=>g.email===email)) return; // Skip if already in Google list
+    const qrows=QUOTA.accounts.filter(d=>d.email===email&&!isInactive(d));
+    accounts.push({
+      email:email, account:email.split("@")[0],
+      isActive:qrows.some(d=>d.isActive),
+      fromGoogle:false, picture:null, name:email,
+      isService:false,
+      agModels: qrows.length,
+    });
+  });
+  
+  // 3. Add service accounts (Claude Code, Kiro with API/manual)
+  const serviceEmails = [...new Set(QUOTA.accounts
+    .filter(d=>["Claude Code","Kiro"].includes(d.tool)&&!isRef(d))
+    .map(d=>d.email))];
+  
+  serviceEmails.forEach(email=>{
+    if(accounts.some(a=>a.email===email)) return;
+    const qrows=QUOTA.accounts.filter(d=>d.email===email&&!isRef(d));
+    const toolNames = [...new Set(qrows.map(d=>toolOf(d)))].join(", ");
+    accounts.push({
+      email:email, account:email,
+      isActive:qrows.some(d=>d.isActive),
+      fromGoogle:false, picture:null, name:email,
+      isService:true,
+      serviceTools: toolNames,
+    });
+  });
+  
+  // Sort: active first, then by name
+  accounts.sort((a,b)=>{
+    if(a.isActive!==b.isActive) return a.isActive?-1:1;
+    return a.email.localeCompare(b.email);
+  });
+  
+  if(!ACTIVE&&accounts.length) ACTIVE=(accounts.find(a=>a.isActive)||accounts[0]).email;
+  return accounts;
+}
+
+/* ── RENDER SIDEBAR ── */
+function renderSidebar(){
+  const accounts=buildQuotaAccounts();
+  const rows=accounts.map((acc,i)=>{
+    const qrows=QUOTA.accounts.filter(d=>d.email===acc.email&&!isInactive(d));
+    const critical=qrows.some(d=>d.isExhausted||d.used_pct>=85);
+    const high=!critical&&qrows.some(d=>d.used_pct!=null&&d.used_pct>=60);
+    const pip=critical?`<span class="alert-pip" style="color:#DC2626">●</span>`
+              :high?`<span class="alert-pip" style="color:#D97706">●</span>`:"";
+    const avContent=acc.picture
+      ?`<img src="${acc.picture}" alt="" onerror="this.parentNode.textContent='${initials(acc.email)}'">`
+      :initials(acc.email);
+    const avClass=acc.picture?"":" "+AV[i%6];
+    const subText=acc.fromGoogle
+      ?`${acc.isActive?`<span class="active-dot"></span>active`:"inactive"} · ${qrows.length} models`
+      :`<span style="color:var(--accent)">●</span> ${acc.serviceTools||'API access'}`;
+    return`<div class="acc-item${acc.email===ACTIVE?" active":""}${!acc.isActive?" dim":""}"
+        onclick="selectAccount('${acc.email}')">
+      <div class="av${avClass}">${avContent}</div>
+      <div class="acc-info">
+        <div class="acc-name">${acc.email.split("@")[0]}</div>
+        <div class="acc-sub">${subText}</div>
+      </div>${pip}
+      ${acc.fromGoogle?`<button class="logout-btn" onclick="logoutAccount(event,'${acc.email}')">✕</button>`:""}
+    </div>`;
+  });
+
+  const addBtn=`<div class="add-btn" onclick="window.location='/auth/google'">
+    <div class="add-icon">+</div>
+    <span>Add Google account</span>
+  </div><div class="sidebar-div"></div>`;
+
+  // Separate account types
+  const googleRows = rows.filter((_,i)=>accounts[i]?.fromGoogle);
+  const agRows = rows.filter((_,i)=>!accounts[i]?.fromGoogle&&!accounts[i]?.isService);
+  const serviceRows = rows.filter((_,i)=>accounts[i]?.isService);
+  
+  let html = addBtn;
+  if(googleRows.length) html += googleRows.join("");
+  if(agRows.length) {
+    if(googleRows.length) html += `<div class="sidebar-div"></div>`;
+    html += agRows.join("");
+  }
+  if(serviceRows.length) {
+    if(googleRows.length || agRows.length) html += `<div style="padding:8px 14px;font-size:10px;color:var(--muted);text-transform:uppercase;letter-spacing:0.05em;border-top:0.5px solid var(--border);margin-top:4px;">Service Accounts</div>`;
+    html += serviceRows.join("");
+  }
+
+  document.getElementById("accountList").innerHTML=html;
+
+  const live=QUOTA.accounts.filter(d=>!isInactive(d)).length;
+  document.getElementById("sidebarMeta").textContent=
+    `${accounts.length} accounts · ${live} live models`;
+}
+
+window.selectAccount=function(email){
+  ACTIVE=email;
+  renderSidebar();
+  renderMain();
+};
+
+window.logoutAccount=function(e,email){
+  e.stopPropagation();
+  window.location=`/auth/logout?email=${encodeURIComponent(email)}`;
+};
+
+/* ── RENDER MAIN ── */
+function renderMain(){
+  const main=document.getElementById("main");
+  const accounts=buildQuotaAccounts();
+  if(!ACTIVE||!accounts.length){
+    main.innerHTML=`<div class="empty-state">
+      <p>${GACCS.length?"Select an account from the sidebar":"No accounts available yet"}</p>
+      ${GACCS.length?"":'<a href="/auth/google">+ Add Google account</a>'}
+    </div>`;
+    return;
+  }
+  const acc=accounts.find(a=>a.email===ACTIVE)||{};
+  const rows=QUOTA.accounts.filter(d=>d.email===ACTIVE&&!isInactive(d));
+
+  // Model family classifier
+  function modelFamily(model){
+    const m=model.toLowerCase();
+    if(m.includes("claude"))  return "Claude";
+    if(m.includes("gemini"))  return "Gemini";
+    if(m.includes("gpt")||m.includes("o1")||m.includes("o3")) return "OpenAI";
+    return "Other";
+  }
+
+  const TOOLS=["Antigravity","Claude Code","Kiro"];
+  // Group by tool, then sub-group by model family inside
+  const byTool={};
+  TOOLS.forEach(t=>{byTool[t]=[];});
+  rows.forEach(d=>{const t=toolOf(d);if(!byTool[t])byTool[t]=[];byTool[t].push(d);});
+
+  const alertHtml=rows.flatMap(d=>{
+    if(d.isExhausted)    return[`<div class="alert-row danger">Exhausted: ${d.model} (${toolOf(d)})</div>`];
+    if(d.used_pct>=90)   return[`<div class="alert-row danger">Critical ${d.used_pct}%: ${d.model} (${toolOf(d)})</div>`];
+    if(d.used_pct>=75)   return[`<div class="alert-row warn">High ${d.used_pct}%: ${d.model} (${toolOf(d)})</div>`];
+    return[];
+  }).join("");
+
+  // Don't show Google sign-in banner for service accounts
+  const isServiceAccount = acc.isService || (!acc.fromGoogle && !GACCS.some(g=>g.email===ACTIVE));
+  const inSession=GACCS.some(g=>g.email===ACTIVE);
+  const oauthBanner=!inSession && !isServiceAccount && ACTIVE
+    ?`<div class="oauth-banner">
+        Not signed in via Google for this account.
+        <a href="/auth/google">Sign in ↗</a>
+      </div>`:"";
+
+  const mainLabel=(acc.name && acc.name!==ACTIVE ? acc.name : ACTIVE.split("@")[0]).trim();
+
+  let html=`<div class="main-header">
+    <h2 class="main-title">${mainLabel}</h2>
+  </div>
+  ${oauthBanner}
+  <div class="alerts">${alertHtml}</div>`;
+
+  let hasContent=false;
+  TOOLS.forEach(tool=>{
+    const items=byTool[tool]||[];
+    if(!items.length)return;
+    hasContent=true;
+    const toolSlug=tool.replace(/\s/g,"");
+
+    // Sub-group by model family
+    const families=["Claude","Gemini","OpenAI","Other"];
+    const byFamily={};
+    families.forEach(f=>{byFamily[f]=[];});
+    items.forEach(d=>{const f=modelFamily(d.model);byFamily[f].push(d);});
+
+    // Build inner family sub-sections
+    let innerHtml="";
+    families.forEach(fam=>{
+      const fitems=byFamily[fam]||[];
+      if(!fitems.length)return;
+      const famSlug=toolSlug+"_"+fam;
+      innerHtml+=`
+        <div class="fam-section">
+          <div class="fam-header" onclick="toggleCat('${famSlug}')">
+            <div class="cat-left">
+              <span class="fam-label">${fam}</span>
+              <span class="cat-count">${fitems.length}</span>
+            </div>
+            <span class="cat-chev open" id="chev-${famSlug}">&#9654;</span>
+          </div>
+          <div class="cat-body" id="body-${famSlug}">
+            <div class="cards-grid">${fitems.map((d,i)=>renderCard(d,famSlug+"_"+i)).join("")}</div>
+          </div>
+        </div>`;
+    });
+
+    html+=`<div class="cat-section">
+      <div class="cat-header" onclick="toggleCat('${toolSlug}')">
+        <div class="cat-left">
+          <span class="cat-label">${tool}</span>
+          <span class="cat-count">${items.length}</span>
+        </div>
+        <span class="cat-chev open" id="chev-${toolSlug}">&#9654;</span>
+      </div>
+      <div class="cat-body" id="body-${toolSlug}">
+        ${innerHtml}
+      </div>
+    </div>`;
+  });
+
+  if(!hasContent){
+    html+=`<div class="empty-state" style="height:40vh">
+      <p>No live data for ${ACTIVE.split("@")[0]}</p>
+      <small>Click ↻ Refresh to fetch live quota</small>
+    </div>`;
+  }
+  main.innerHTML=html;
+}
+
+/* ── RENDER CARD ── */
+function renderCard(d,cardId){
+  const p=d.used_pct,ex=d.isExhausted;
+  const dc=dotClass(p,ex),fc=p==null?"bf-gray":"bf-green"; // Always green for available
+  const rs=fmtMs(d.resetTime,d.resetMs);
+  const detailText=d.detail_text||d.note||"";
+  // Show % available instead of % used
+  const availablePct = p==null?null:(100-p);
+  const quotaBlock=ex
+    ?`<div class="quota-text" style="color:var(--danger);font-weight:500">Exhausted</div>`
+    :p!=null
+      ?`<div class="bar-track"><div class="bar-fill ${fc}" style="width:${availablePct}%"></div></div>
+        <div class="quota-text">${d.value_text||`${availablePct}% available`}</div>`
+      :`<div class="quota-text" style="color:var(--muted)">${d.value_text||"No quota data"}</div>`;
+  const detailBlock=detailText?`<div class="quota-text" style="margin-top:4px;color:var(--muted)">${detailText}</div>`:"";
+  let footer="";
+  if(d.isActive)     footer+=`<span class="badge b-active">active</span>`;
+  if(ex)             footer+=`<span class="badge b-exh">exhausted</span>`;
+  if(d.autocompleteOnly) footer+=`<span class="badge b-ac">AC</span>`;
+  if(rs&&!ex)        footer+=`<span class="${p>=85?"reset-warn":"reset-txt"}">↺ ${rs}</span>`;
+  return`<div class="card${!d.isActive?" dim":""}" id="${cardId}">
+    <div class="card-top"><div class="card-name">${d.model}</div><div class="sdot ${dc}"></div></div>
+    <div class="card-tool">${toolOf(d)}</div>
+    ${quotaBlock}${detailBlock}
+    <div class="card-footer">${footer}</div>
+  </div>`;
+}
+
+/* ── TOGGLE CAT ── */
+window.toggleCat=function(slug){
+  const b=document.getElementById("body-"+slug),c=document.getElementById("chev-"+slug);
+  c.classList.toggle("open",b.classList.toggle("collapsed")?false:true);
+};
+
+/* ── REFRESH ── */
+window.doRefresh=async function(){
+  // Preserve active account before refresh
+  const savedActive=ACTIVE;
+  const savedGaccs=[...GACCS];
+
+  // Update button state in-place — do NOT wipe the page
+  const btn=document.getElementById("refreshBtn");
+  if(btn){btn.disabled=true;btn.textContent="…";}
+  document.getElementById("sidebarFooter").textContent="Refreshing…";
+
+  try{
+    const r=await fetch("/api/refresh",{method:"POST"});
+    if(!r.ok)throw new Error(`HTTP ${r.status}`);
+    const json=await r.json();
+
+    // Update data — preserve ACTIVE and GACCS
+    QUOTA=json.data||QUOTA;
+    window._fetchedAt=QUOTA.fetched_at;
+    ACTIVE=savedActive;
+    if(!GACCS.length) GACCS=savedGaccs;
+
+    document.getElementById("sidebarFooter").textContent="Synced "+timeSince(QUOTA.fetched_at);
+
+    // Re-render both panels with preserved state
+    renderSidebar();
+    renderMain();
+  }catch(e){
+    document.getElementById("sidebarFooter").textContent="Refresh failed: "+e.message;
+  }finally{
+    if(btn){btn.disabled=false;btn.textContent="↻";}
+  }
+};
+
+/* ── INIT ── */
+async function init(){
+  try{
+    // Load Google OAuth accounts from session
+    const ar=await fetch("/api/accounts");
+    const aj=await ar.json();
+    GACCS=aj.accounts||[];
+
+    // Load quota data
+    const qr=await fetch("/api/quota");
+    const qj=await qr.json();
+    QUOTA=qj;
+    window._fetchedAt=QUOTA.fetched_at;
+
+    renderSidebar();
+    renderMain();
+    document.getElementById("sidebarFooter").textContent=
+      QUOTA.fetched_at?"Synced "+timeSince(QUOTA.fetched_at):"No data yet — click Refresh";
+  }catch(e){
+    document.getElementById("main").innerHTML=`<div class="empty-state">
+      <p>Could not connect to server</p>
+      <small>${e.message}</small>
+      <small>Make sure app.py is running on port 8000</small>
+    </div>`;
+  }
+}
+
+init();
+// Auto-poll every 15 minutes — silent background update
+setInterval(async()=>{
+  try{
+    const r=await fetch("/api/quota");
+    const j=await r.json();
+    if(j.fetched_at===window._fetchedAt) return; // no change
+    const saved=ACTIVE;
+    QUOTA=j; window._fetchedAt=j.fetched_at; ACTIVE=saved;
+    renderSidebar();
+    renderMain();
+    document.getElementById("sidebarFooter").textContent="Synced "+timeSince(j.fetched_at);
+  }catch(e){}
+}, 15*60*1000);
+</script>
+</body>
+</html>
